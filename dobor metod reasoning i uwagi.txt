@@ -1,0 +1,71 @@
+﻿WRAZ Z GEMINI PRZEANALIZOWALIŚMY DOBÓR METODY REPREZENTACJI SŁÓW (NLP) I ZDECYDOWALIŚMY SIĘ NA TF-IDF
+
+
+celem jest nie tylko zbudowanie modelu, ale przede wszystkim zrozumienie wyników za pomocą analizy SHAP (czyli odpowiedź na pytanie: co dokładnie sprawia, że post zyskuje retweety?), musisz dobrać metodę NLP, która zachowuje wysoką interpretowalność 
+1. TF-IDF (Term Frequency-Inverse Document Frequency) – Najlepszy wybór do łatwej analizy SHAP
+Najlepszy punkt wyjścia dla Twojego zadania. Algorytm ten zlicza występowanie słów w danym tweecie, ale obniża wagę tych słów, które występują bardzo często w całym zbiorze (jak "the", "and", "is"), a premiuje słowa unikalne dla danego wpisu.
+Dlaczego warto: Wynikiem działania TF-IDF jest macierz, w której każda kolumna to konkretne słowo (np. "fake", "news", "great"). 
+2. Bag of Words (BoW / CountVectorizer)
+Najprostsza metoda reprezentacji, polegająca na stworzeniu "worka słów" – model po prostu zlicza, ile razy dane słowo wystąpiło w tweecie (0, 1, 2 itd.).
+Wady: Gorzej radzi sobie z wyciąganiem ważnych informacji niż TF-IDF, ponieważ popularne słowa mogą zdominować model.
+CZYM JEST SHAP
+
+
+Biblioteka shap posiada kilka klas (tzw. Explainerów), które są zoptymalizowane pod konkretne rodziny algorytmów. wybór będzie zależał bezpośrednio od tego, jaki estymator zapnniemy na macierz TF-IDF: 
+shap.TreeExplainer - Jeśli zdecydujesz się na drzewa decyzyjne. Wnika on bezpośrednio w strukturę drzew algorytmu, dzięki czemu oblicza dokładne wartości w czasie wielomianowym, a nie wykładniczym. Z rzadkimi macierzami działa niesamowicie szybko. 
+
+
+JAKIE WYBIERAMY MODELE
+
+
+model do przewidywania liczby retweetów: 
+
+
+Lasy Losowe (Random Forest)  Są bardzo odporne na przeuczenie (overfitting) Współpraca z SHAP: używasz szybkiego TreeExplainer. 
+
+
+Modele oparte na drzewach wzmacnianych gradientowo (XGBoost)
+Dlaczego warto: Oba algorytmy natywnie i bardzo wydajnie obsługują rzadkie macierze. Potrafią wyłapać nieliniowe zależności (np. słowo "fake" samo w sobie podbija retweety, ale w połączeniu ze słowem "news" podbija je podwójnie). 
+
+
+POSTANOWILIŚMY UŻYĆ OBU MODELI         - TEGO KTÓREGO UŻYWALIŚMY PODCZAS ZAJĘĆ (RANDOM FOREST) I JAKIEGOŚ NOWEGO ABY JE PORÓWNAĆ, PONIEWAŻ KORZYŚCI Z XGBOOST BRZMIĄ KUSZACO
+Co z Sieciami Neuronowymi?
+Mimo że w wielu zaawansowanych problemach – takich jak złożone zadania klasyfikacyjne czy klastrowanie – naturalnym krokiem jest sięgnięcie po sieci neuronowe (np. klasyczny Multi-Layer Perceptron), tutaj mogą okazać się przerostem formy nad treścią. Przepuszczanie rzadkiej macierzy TF-IDF przez gęste warstwy sieci jest trudniejsze do optymalizacji, a co najważniejsze – moduł SHAP dla sieci (DeepExplainer) jest znacznie bardziej obciążający obliczeniowo niż ten dla drzew. W tym konkretnym potoku lepiej sprawdzą się prostsze algorytmy.
+
+
+
+
+UWAGI:
+WARTO WSPOMNIEĆ
+Nadmierne czyszczenie tekstu (Utrata kontekstu) Twoja funkcja clean_text usuwa znaki interpunkcyjne i sprowadza tekst do małych liter. W klasycznym NLP to standard. Jednak w przypadku konta @realDonaldTrump, duże litery (np. "FAKE NEWS!") oraz wykrzykniki (!!!) są kluczowymi nośnikami emocji, które mocno pompują retweety. Twoja reprezentacja TF-IDF ten fakt ignoruje. Jeśli zadanie ściśle wymaga "reprezentacji występujących słów", zostaw jak jest, ale warto o tym wspomnieć w dyskusji. 
+
+
+SUGESTIA JAK INTERPRETOWAĆ WYNIKI
+Interpretacja Globalna (Wykres 2: Beeswarm / Wykres 3: Bar plot)
+Tutaj oceniasz, "co w ogóle działa na odbiorców".
+1. Emocje i Polaryzacja: Spójrz na najważniejsze cechy (na samej górze wykresu Beeswarm). Niemal na pewno znajdziesz tam słowa polaryzujące, takie jak fake, media, democrats, witch, hunt, maga.
+2. Kierunek wpływu: Na wykresie Beeswarm kropki po prawej stronie osi Y oznaczają, że dane słowo zwiększyło liczbę retweetów. Sprawdź kolor tych kropek. Czerwony kolor (wysoka wartość cechy TF-IDF) przycięty do prawej strony potwierdzi, że samo użycie i częstotliwość tego słowa w poście napędza wiralność.
+3. Słowa nudne = mniejsze zaangażowanie: Poszukaj słów, które ciągną predykcję w lewą stronę (zmniejszają liczbę retweetów). Będą to prawdopodobnie słowa związane z rutynowymi obowiązkami lub oficjalnymi komunikatami bez nacechowania emocjonalnego.
+Interpretacja Lokalna (Wykres 1: Waterfall plot)
+Wybierz jednego tweeta, który miał bardzo dużo retweetów, zmień zmienną idx i wygeneruj dla niego Waterfall.
+1. Punkt wyjścia ($E[f(X)]$): Wykres zacznie się od dołu od wartości E[f(X)] – to "baza" (średnia zlogarytmowana liczba retweetów, jakiej model spodziewa się dla każdego, losowego tweeta, zanim w ogóle spojrzy na jego treść).
+2. Składowe sukcesu: Każdy schodek pokaże Ci, jak konkretne słowo przesunęło wartość w górę lub w dół. W dyskusji napisz np.: "Dla badanego tweeta bazowa wartość wynosiła X, jednak użycie słowa 'maga' dodało Y do przewidywanego wyniku, a słowo 'great' dodało kolejne Z, prowadząc do ostatecznej predykcji na poziomie..." (pamiętaj, że wartości SHAP są tu w skali logarytmicznej, tak jak Twój target).
+
+
+WAŻNA UWAGA W KODZIE:
+
+
+obecność słowa "realdonaldtrump" najprawdopodobniej zaburza wyniki i nie jest niezbędna. 
+
+
+Jest to artefakt platformy, a nie treść: Na własnym profilu na Twitterze nazwa użytkownika w treści tweeta pojawia się niemal wyłącznie w dwóch przypadkach: przy podawaniu dalej własnych postów (np. "RT @realDonaldTrump...") lub przy cytowaniach. Nie niesie to żadnej wartości semantycznej o poglądach, emocjach czy używanym słownictwie. 
+
+
+PRZYKŁADY Z ZESTAWU DANYCH:
+
+
+Tourism is booming because of it. RT @ DuncanBannatyne Just been to the fantastic @ realDonaldTrump golf links in Aberdeen. Quality stuff
+--------------------------------------------------
+@ realDonaldTrump @ LaurenScruggs Lauren--you are fantastic and an inspiration.
+--------------------------------------------------
+RT @Newsmax_Media: Donald Trump: Mean-Spirited GOP Won't Win Elections @ REALDonaldTrump http://www… … via @Newsmax_Media
