@@ -6,6 +6,7 @@ https://www.kaggle.com/datasets/austinreese/trump-tweets
 stosując reprezentację występujących w tekście słów. Następnie dla zbudowanego modelu proszę przeprowadzić analizę SHAP i przeprowadzić dyskusję uzyskanych wyników. 
 
 Patrzymy na to, ile dany post dostaje retweetów i co wpływa na to, że dany post dostaje uwagę odbiorców.
+
 ---
 W sprawozdaniu należy zamieścić opis zadania, uzyskane wyniki oraz plik źródłowy z
 rozwiązaniem (może być w formie odnośnika do repozytorium z kodem) Oceniane będą:
